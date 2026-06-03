@@ -6,14 +6,14 @@ A simple budget tool as an HTML file.
 <h2>Features</h2> 
 __________________________
 
-- <br>  Main Dashboard
-- <br>  Mortgage Calculator
-- <br>  Investment Calculator 
-- <br>  Summary
-- <br>  Export In PDF, doc and spreadsheet
-- <br>   Change Dahsboard Name
-- <br>   Add or remove lines
-- <br>   Five themes: Light, Dark, Midnight, Warm, High Contrast
+- Main Dashboard
+- Mortgage Calculator
+- Investment Calculator 
+- Summary
+- Export In PDF, doc and spreadsheet
+- Change Dahsboard Name
+- Add or remove lines
+- Five themes: Light, Dark, Midnight, Warm, High Contrast
 
  <br />
  <br />
