@@ -3,7 +3,7 @@
 A simple budget tool as an HTML file.
 
 
-## Features
+# Features
 __________________________
 
 -Export In PDF, doc and spreadsheet
