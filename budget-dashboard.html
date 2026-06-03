@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+  /* === STYLES === */
+
+  :root[data-theme="light"] {
+    --bg: #f5f7fa; --surface: #ffffff; --surface-2: #f0f2f5; --border: #e2e8f0;
+    --accent: #4361ee; --accent-hover: #3451d1; --text: #1a1a2e; --text-muted: #64748b;
+    --positive: #16a34a; --negative: #dc2626;
+    --chart-1: #4361ee; --chart-2: #7c3aed; --chart-3: #db2777;
+    --chart-4: #ea580c; --chart-5: #16a34a; --chart-6: #0891b2;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --surface: #161b22; --surface-2: #21262d; --border: #30363d;
+    --accent: #58a6ff; --accent-hover: #79b8ff; --text: #e6edf3; --text-muted: #8b949e;
+    --positive: #3fb950; --negative: #f85149;
+    --chart-1: #58a6ff; --chart-2: #bc8cff; --chart-3: #ff7b72;
+    --chart-4: #ffa657; --chart-5: #3fb950; --chart-6: #39d353;
+  }
+  :root[data-theme="midnight"] {
+    --bg: #0a0a1a; --surface: #12122a; --surface-2: #1a1a35; --border: #2d2d5a;
+    --accent: #a78bfa; --accent-hover: #c4b5fd; --text: #e2e8f0; --text-muted: #94a3b8;
+    --positive: #4ade80; --negative: #f87171;
+    --chart-1: #a78bfa; --chart-2: #f472b6; --chart-3: #34d399;
+    --chart-4: #fb923c; --chart-5: #4ade80; --chart-6: #38bdf8;
+  }
+  :root[data-theme="warm"] {
+    --bg: #fdf6ec; --surface: #ffffff; --surface-2: #fef3e2; --border: #e8d5b7;
+    --accent: #e07b39; --accent-hover: #c96b2a; --text: #2d2013; --text-muted: #7c6340;
+    --positive: #2d7a3a; --negative: #c0392b;
+    --chart-1: #e07b39; --chart-2: #8b4513; --chart-3: #d4a017;
+    --chart-4: #2d7a3a; --chart-5: #1a6b8a; --chart-6: #7b2d8b;
+  }
+  :root[data-theme="contrast"] {
+    --bg: #000000; --surface: #111111; --surface-2: #1a1a1a; --border: #555555;
+    --accent: #ffff00; --accent-hover: #ffffaa; --text: #ffffff; --text-muted: #cccccc;
+    --positive: #00ff00; --negative: #ff4444;
+    --chart-1: #ffff00; --chart-2: #00ffff; --chart-3: #ff00ff;
+    --chart-4: #ff8800; --chart-5: #00ff00; --chart-6: #8888ff;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    transition: background-color 0.2s, color 0.2s;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 1.5rem; gap: 0.5rem; height: 56px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+    transition: background-color 0.2s;
+  }
+  .nav-logo { font-weight: 700; font-size: 1.1rem; color: var(--accent); margin-right: 1rem; white-space: nowrap; cursor: pointer; }
+  .nav-logo:hover .logo-text { text-decoration: underline dotted; }
+  .logo-edit-input {
+    font-weight: 700; font-size: 1.1rem; color: var(--accent); background: var(--surface-2);
+    border: 1px solid var(--accent); border-radius: 4px; padding: 0.1rem 0.4rem;
+    outline: none; width: 200px; margin-right: 1rem;
+  }
+  .nav-tabs { display: flex; gap: 0.25rem; flex: 1; }
+  .nav-tab {
+    padding: 0.5rem 1rem; border: none; background: none; color: var(--text-muted);
+    cursor: pointer; border-radius: 6px; font-size: 0.9rem; font-weight: 500;
+    transition: background 0.15s, color 0.15s; white-space: nowrap;
+  }
+  .nav-tab:hover { background: var(--surface-2); color: var(--text); }
+  .nav-tab.active { background: var(--accent); color: #fff; }
+  .nav-right { display: flex; align-items: center; gap: 0.5rem; position: relative; }
+
+  /* THEME SWITCHER */
+  .theme-btn {
+    height: 36px; padding: 0 0.7rem; border: 1px solid var(--border); background: var(--surface-2);
+    border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;
+    font-size: 0.85rem; font-weight: 500; color: var(--text); transition: background 0.15s; white-space: nowrap;
+  }
+  .theme-btn:hover { background: var(--border); }
+  .theme-btn .theme-icon { font-size: 1rem; }
+  .theme-popover {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.75rem; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    display: none; flex-direction: column; gap: 0.4rem; min-width: 160px; z-index: 200;
+  }
+  .theme-popover.open { display: flex; }
+  .theme-swatch {
+    display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.6rem;
+    border-radius: 6px; cursor: pointer; border: none; background: none;
+    color: var(--text); font-size: 0.85rem; width: 100%; text-align: left;
+    transition: background 0.1s;
+  }
+  .theme-swatch:hover { background: var(--surface-2); }
+  .swatch-circle {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; flex-shrink: 0; font-weight: 700; color: #000;
+  }
+  .theme-swatch.active .swatch-circle { border-color: var(--accent); }
+
+  /* LAYOUT */
+  .content { padding: 1.5rem; max-width: 1400px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 1.25rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    transition: background-color 0.2s;
+  }
+  .card-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.35rem; }
+  .card-value { font-size: 1.8rem; font-weight: 700; }
+  .card-value.positive { color: var(--positive); }
+  .card-value.negative { color: var(--negative); }
+
+  /* GRIDS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+
+  /* BUDGET TAB */
+  .budget-layout { display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem; align-items: start; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 0.5rem 0.75rem; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+  td { padding: 0.35rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) td { background: var(--surface-2); }
+
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 0.75rem; font-weight: 600; font-size: 0.9rem;
+    background: var(--surface-2); border-radius: 6px; margin: 1rem 0 0.5rem;
+  }
+  .section-header:first-child { margin-top: 0; }
+  .section-header.income { color: var(--positive); }
+  .section-header.expense { color: var(--negative); }
+
+  /* BUTTONS */
+  .btn { padding: 0.4rem 0.9rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: background 0.15s, opacity 0.15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-danger { background: var(--negative); color: #fff; font-size: 0.8rem; padding: 0.2rem 0.55rem; }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+  .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--border); }
+
+  /* INPUTS */
+  input[type="text"], input[type="number"], select {
+    height: 44px; padding: 0 0.75rem; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface-2); color: var(--text); font-size: 0.9rem; width: 100%;
+    transition: border-color 0.15s, background-color 0.2s;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  input.invalid { border-color: var(--negative); }
+  td input[type="text"], td input[type="number"] { height: 36px; font-size: 0.88rem; }
+
+  /* BUDGET RIGHT PANEL */
+  .summary-panel { display: flex; flex-direction: column; gap: 0.75rem; }
+  .summary-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+  /* CHART CONTAINERS */
+  .chart-wrap    { position: relative; height: 260px; }
+  .chart-wrap-lg { position: relative; height: 300px; }
+  .chart-wrap-xl { position: relative; height: 360px; }
+
+  /* MORTGAGE TAB */
+  .mortgage-layout { display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; align-items: start; }
+  .form-group { margin-bottom: 0.9rem; }
+  .form-label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.3rem; font-weight: 500; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+  .result-item { display: flex; justify-content: space-between; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
+  .result-item:last-child { border-bottom: none; }
+  .result-label { font-size: 0.88rem; color: var(--text-muted); }
+  .result-value { font-size: 0.92rem; font-weight: 600; }
+  .result-item.highlight .result-value { color: var(--accent); font-size: 1.05rem; }
+  .result-item.savings .result-value { color: var(--positive); }
+
+  .amort-table-wrap { max-height: 380px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
+  .amort-table-wrap table th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+
+  details > summary {
+    cursor: pointer; list-style: none; padding: 0.6rem 0.75rem;
+    background: var(--surface-2); border-radius: 6px; font-weight: 600;
+    font-size: 0.9rem; user-select: none;
+  }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: '▶ '; font-size: 0.75rem; }
+  details[open] > summary::before { content: '▼ '; }
+  details > .details-content { margin-top: 0.75rem; }
+
+  /* INVESTMENT TAB */
+  .investment-layout { display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; align-items: start; }
+  .mode-toggle { display: flex; gap: 0.5rem; margin-bottom: 1.1rem; }
+  .mode-btn { flex: 1; padding: 0.5rem; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.15s; }
+  .mode-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* SUMMARY TAB */
+  .summary-tab-layout { display: grid; gap: 1.5rem; }
+  .health-score { font-size: 2.8rem; font-weight: 800; }
+  .progress-bar-wrap { background: var(--surface-2); border-radius: 999px; height: 10px; overflow: hidden; margin-top: 0.4rem; }
+  .progress-bar { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.4s; }
+  .action-list { list-style: none; display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.6rem; }
+  .action-item { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem 0.75rem; background: var(--surface-2); border-radius: 6px; font-size: 0.875rem; }
+  .action-icon { flex-shrink: 0; font-size: 1rem; }
+
+  /* EXPORT */
+  .export-wrap { position: relative; }
+  .export-btn {
+    height: 36px; padding: 0 0.7rem; border: 1px solid var(--border); background: var(--surface-2);
+    border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.35rem;
+    font-size: 0.85rem; font-weight: 500; color: var(--text); transition: background 0.15s; white-space: nowrap;
+  }
+  .export-btn:hover { background: var(--border); }
+  .export-popover {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.5rem; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    display: none; flex-direction: column; gap: 0.25rem; min-width: 190px; z-index: 200;
+  }
+  .export-popover.open { display: flex; }
+  .export-option {
+    display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.6rem;
+    border-radius: 6px; cursor: pointer; border: none; background: none;
+    color: var(--text); font-size: 0.85rem; width: 100%; text-align: left; transition: background 0.1s;
+  }
+  .export-option:hover { background: var(--surface-2); }
+
+  @media print {
+    .nav, .btn, details > summary::before, .export-wrap { display: none !important; }
+    .tab-panel { display: block !important; page-break-before: always; }
+    .tab-panel:first-of-type { page-break-before: auto; }
+    .card { break-inside: avoid; box-shadow: none !important; }
+    body { background: #fff !important; color: #000 !important; }
+  }
+
+  /* UTILITIES */
+  .mb-1 { margin-bottom: 0.5rem; } .mb-2 { margin-bottom: 1rem; } .mb-3 { margin-bottom: 1.5rem; }
+  .mt-1 { margin-top: 0.5rem; }   .mt-2 { margin-top: 1rem; }
+  .flex { display: flex; } .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; } .gap-1 { gap: 0.5rem; }
+  .text-muted { color: var(--text-muted); } .text-sm { font-size: 0.85rem; }
+  .font-bold { font-weight: 700; } .hidden { display: none !important; }
+  .positive { color: var(--positive); } .negative { color: var(--negative); }
+
+  @media (max-width: 960px) {
+    .budget-layout, .mortgage-layout, .investment-layout { grid-template-columns: 1fr; }
+    .nav-logo { display: none; }
+    .nav-tabs { overflow-x: auto; }
+  }
+  @media (max-width: 600px) {
+    .content { padding: 1rem; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .summary-cards { grid-template-columns: 1fr; }
+    .nav-tab { padding: 0.45rem 0.55rem; font-size: 0.78rem; }
+  }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo" id="navLogo" onclick="startEditName()" title="Click to rename">
+    <span class="logo-text" id="logoText">💰 Budget Dashboard</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-tab="budget"    onclick="switchTab('budget',this)">Budget</button>
+    <button class="nav-tab"        data-tab="mortgage"  onclick="switchTab('mortgage',this)">Mortgage Calculator</button>
+    <button class="nav-tab"        data-tab="investment" onclick="switchTab('investment',this)">Investment Calculator</button>
+    <button class="nav-tab"        data-tab="summary"   onclick="switchTab('summary',this)">Summary</button>
+  </div>
+  <div class="nav-right">
+    <div class="export-wrap">
+      <button class="export-btn" onclick="toggleExportPopover()">📤 Export</button>
+      <div class="export-popover" id="exportPopover">
+        <button class="export-option" onclick="exportPDF()">🖨️ PDF / Print</button>
+        <button class="export-option" onclick="exportCSV()">📊 Spreadsheet (CSV)</button>
+        <button class="export-option" onclick="exportDoc()">📄 Word Document</button>
+      </div>
+    </div>
+    <button class="theme-btn" onclick="toggleThemePopover()"><span class="theme-icon">🎨</span> Theme</button>
+    <div class="theme-popover" id="themePopover">
+      <button class="theme-swatch" data-theme="light"    onclick="setTheme('light')">
+        <span class="swatch-circle" style="background:#4361ee"></span> Light
+      </button>
+      <button class="theme-swatch" data-theme="dark"     onclick="setTheme('dark')">
+        <span class="swatch-circle" style="background:#58a6ff"></span> Dark
+      </button>
+      <button class="theme-swatch" data-theme="midnight" onclick="setTheme('midnight')">
+        <span class="swatch-circle" style="background:#a78bfa"></span> Midnight
+      </button>
+      <button class="theme-swatch" data-theme="warm"     onclick="setTheme('warm')">
+        <span class="swatch-circle" style="background:#e07b39"></span> Warm
+      </button>
+      <button class="theme-swatch" data-theme="contrast" onclick="setTheme('contrast')">
+        <span class="swatch-circle" style="background:#ffff00;border-color:#555;color:#000"></span> High Contrast
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="content">
+
+  <!-- ===== TAB: BUDGET ===== -->
+  <div class="tab-panel active" id="tab-budget">
+    <div class="budget-layout">
+      <div class="card">
+        <h2 class="font-bold mb-2">Income &amp; Expenses</h2>
+        <div class="section-header income">
+          <span>💚 Income</span>
+          <button class="btn btn-primary btn-sm" onclick="addRow('income')">+ Add Row</button>
+        </div>
+        <table>
+          <thead><tr><th>Category</th><th>Monthly Amount</th><th></th></tr></thead>
+          <tbody id="incomeBody"></tbody>
+        </table>
+        <div class="section-header expense">
+          <span>❌ Expenses</span>
+          <button class="btn btn-primary btn-sm" onclick="addRow('expense')">+ Add Row</button>
+        </div>
+        <table>
+          <thead><tr><th>Category</th><th>Monthly Amount</th><th></th></tr></thead>
+          <tbody id="expenseBody"></tbody>
+        </table>
+      </div>
+
+      <div class="summary-panel">
+        <div class="summary-cards">
+          <div class="card">
+            <div class="card-title">Monthly Income</div>
+            <div class="card-value positive" id="b-income">$0</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Monthly Expenses</div>
+            <div class="card-value negative" id="b-expenses">$0</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Net Cash Flow</div>
+            <div class="card-value" id="b-cashflow">$0</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Annual Projection</div>
+            <div class="card-value" id="b-annual">$0</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Savings Rate</div>
+          <div class="card-value" id="b-savings-rate">0%</div>
+          <div class="progress-bar-wrap mt-1">
+            <div class="progress-bar" id="b-savings-bar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Expense Breakdown</div>
+          <div class="chart-wrap"><canvas id="budgetChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: MORTGAGE ===== -->
+  <div class="tab-panel" id="tab-mortgage">
+    <div class="mortgage-layout">
+      <div class="card">
+        <h2 class="font-bold mb-2">Mortgage Inputs</h2>
+        <div class="form-group">
+          <label class="form-label">Home Price ($)</label>
+          <input type="text" id="m-price" value="400,000"
+            onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcMortgage()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Down Payment</label>
+          <div class="form-row">
+            <input type="text" id="m-down-amt" value="80,000" placeholder="Amount ($)"
+              onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="syncDownPayment('amt')">
+            <input type="text" id="m-down-pct" value="20" placeholder="Percent (%)"
+              oninput="syncDownPayment('pct')">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Loan Term</label>
+          <select id="m-term" onchange="calcMortgage()">
+            <option value="10">10 years</option>
+            <option value="15">15 years</option>
+            <option value="20">20 years</option>
+            <option value="25">25 years</option>
+            <option value="30" selected>30 years</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Annual Interest Rate (%)</label>
+          <input type="number" id="m-rate" value="6.8" step="0.1" min="0" max="30" oninput="calcMortgage()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Annual Property Tax ($)</label>
+          <input type="text" id="m-tax" value="4,800"
+            onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcMortgage()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Annual Home Insurance ($)</label>
+          <input type="text" id="m-ins" value="1,200"
+            onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcMortgage()">
+        </div>
+        <div class="form-group" id="m-pmi-group">
+          <label class="form-label">Monthly PMI ($)</label>
+          <input type="text" id="m-pmi" value="150"
+            onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcMortgage()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Extra Monthly Payment ($)</label>
+          <input type="text" id="m-extra" value="0"
+            onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcMortgage()">
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb-2">
+          <h2 class="font-bold mb-2">Results</h2>
+          <div id="mortgageResults"></div>
+        </div>
+        <div class="card mb-2">
+          <h3 class="font-bold mb-1">Principal vs. Interest Over Time</h3>
+          <div class="chart-wrap-lg"><canvas id="mortgageChart"></canvas></div>
+        </div>
+        <div class="card">
+          <details id="amortDetails">
+            <summary>Amortization Schedule</summary>
+            <div class="details-content">
+              <div class="flex gap-1 mb-2">
+                <button class="btn btn-ghost btn-sm" id="amortViewBtn" onclick="toggleAmortView()">Show Monthly</button>
+              </div>
+              <div class="amort-table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Period</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr>
+                  </thead>
+                  <tbody id="amortBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: INVESTMENT ===== -->
+  <div class="tab-panel" id="tab-investment">
+    <div class="investment-layout">
+      <div class="card">
+        <h2 class="font-bold mb-2">Investment Inputs</h2>
+        <div class="mode-toggle">
+          <button class="mode-btn active" id="mode-compound" onclick="setInvestMode('compound')">Compound Growth</button>
+          <button class="mode-btn"        id="mode-retire"   onclick="setInvestMode('retire')">Retirement Savings</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Initial Investment ($)</label>
+          <input type="text" id="i-initial" value="10,000"
+            onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcInvestment()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Monthly Contribution ($)</label>
+          <input type="text" id="i-monthly" value="500"
+            onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcInvestment()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Annual Return Rate (%)</label>
+          <input type="number" id="i-rate" value="7" step="0.1" min="0" max="50" oninput="calcInvestment()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Investment Period (years)</label>
+          <input type="number" id="i-years" value="20" step="1" min="1" max="60" oninput="calcInvestment()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Compound Frequency</label>
+          <select id="i-freq" onchange="calcInvestment()">
+            <option value="1">Annually</option>
+            <option value="4">Quarterly</option>
+            <option value="12" selected>Monthly</option>
+          </select>
+        </div>
+        <div id="retire-fields" class="hidden">
+          <div class="form-group">
+            <label class="form-label">Current Age</label>
+            <input type="number" id="i-age" value="30" min="18" max="80" oninput="syncRetireYears(); calcInvestment()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target Retirement Age</label>
+            <input type="number" id="i-retire-age" value="65" min="40" max="90" oninput="syncRetireYears(); calcInvestment()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Desired Monthly Income in Retirement ($)</label>
+            <input type="text" id="i-retire-income" value="5,000"
+              onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcInvestment()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Expected Inflation Rate (%)</label>
+            <input type="number" id="i-inflation" value="2.5" step="0.1" min="0" max="20" oninput="calcInvestment()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Withdrawal Rate (%)</label>
+            <input type="number" id="i-withdrawal" value="4" step="0.1" min="1" max="20" oninput="calcInvestment()">
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card mb-2">
+          <h2 class="font-bold mb-2">Results</h2>
+          <div id="investResults"></div>
+        </div>
+        <div class="card">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold" id="investChartTitle">Contributions vs. Growth</h3>
+            <button class="btn btn-ghost btn-sm" onclick="toggleInvestChart()">Toggle View</button>
+          </div>
+          <div class="chart-wrap-xl"><canvas id="investChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TAB: SUMMARY ===== -->
+  <div class="tab-panel" id="tab-summary">
+    <div class="summary-tab-layout">
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">Net Cash Flow</div>
+          <div class="card-value" id="s-cashflow">$0</div>
+          <div class="text-muted text-sm mt-1">Monthly surplus / deficit</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Budget Health Score</div>
+          <div class="health-score" id="s-health">—</div>
+          <div class="text-muted text-sm" id="s-health-label">Enter budget data</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Savings Rate</div>
+          <div class="card-value" id="s-savings-rate">0%</div>
+          <div class="progress-bar-wrap mt-1">
+            <div class="progress-bar" id="s-savings-bar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Mortgage Affordability</div>
+          <div class="flex items-center justify-between">
+            <span class="card-value" id="s-afford-pct">—</span>
+            <span class="text-sm text-muted">of monthly income</span>
+          </div>
+          <div class="text-sm mt-1" id="s-afford-status"></div>
+          <div class="text-muted text-sm mt-1">Green &lt;28% · Yellow 28–36% · Red &gt;36%</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Investment Projection</div>
+          <div class="flex items-center justify-between">
+            <span class="card-value" id="s-invest-val">$0</span>
+            <span class="text-sm text-muted">projected value</span>
+          </div>
+          <div class="progress-bar-wrap mt-1">
+            <div class="progress-bar" id="s-invest-bar" style="width:0%"></div>
+          </div>
+          <div class="text-muted text-sm mt-1" id="s-invest-label">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="font-bold mb-1">💡 Key Action Items</div>
+        <ul class="action-list" id="s-actions">
+          <li class="action-item"><span class="action-icon">📊</span><span>Enter budget, mortgage, and investment data to see personalized recommendations.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+/* === SHARED UTILS === */
+
+/** @param {number} n @returns {string} */
+function fmtMoney(n) {
+  if (!isFinite(n)) return '$0';
+  return '$' + Math.round(Math.abs(n)).toLocaleString('en-US');
+}
+
+/** @param {number} n @param {number} [dec] @returns {string} */
+function fmtMoneyDec(n, dec = 2) {
+  if (!isFinite(n)) return '$0.00';
+  return '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+/** @param {number} n @returns {string} */
+function fmtPct(n) { return (isFinite(n) ? Math.abs(n).toFixed(1) : '0') + '%'; }
+
+function stripCommas(el) { el.value = el.value.replace(/,/g, ''); }
+
+function formatCurrencyInput(el) {
+  const v = parseFloat(el.value.replace(/,/g, ''));
+  if (!isNaN(v) && v >= 0) {
+    el.value = v.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    el.classList.remove('invalid');
+  } else {
+    el.classList.add('invalid');
+  }
+}
+
+/** @param {string} id @returns {number} */
+function parseInput(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  const v = parseFloat(el.value.replace(/,/g, ''));
+  return isNaN(v) ? 0 : v;
+}
+
+/** @param {string} name @returns {string} */
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/** @returns {string[]} */
+function chartColors() {
+  return [1,2,3,4,5,6].map(i => cssVar(`--chart-${i}`));
+}
+
+/* Tab switching — active tab stored in memory only */
+let _activeTab = 'budget';
+
+function switchTab(name, btn) {
+  _activeTab = name;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'summary') updateSummary();
+}
+
+/* === THEME === */
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('budget-theme', theme);
+  document.querySelectorAll('.theme-swatch').forEach(s => {
+    const active = s.dataset.theme === theme;
+    s.classList.toggle('active', active);
+    s.querySelector('.swatch-circle').textContent = active ? '✓' : '';
+  });
+  document.getElementById('themePopover').classList.remove('open');
+  setTimeout(() => { renderBudgetChart(); renderMortgageChart(); renderInvestChart(); }, 30);
+}
+
+function toggleThemePopover() {
+  document.getElementById('themePopover').classList.toggle('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.nav-right')) {
+    document.getElementById('themePopover').classList.remove('open');
+    document.getElementById('exportPopover').classList.remove('open');
+  }
+});
+
+/* === BUDGET === */
+
+const INCOME_DEFAULTS  = ['Salary', 'Freelance/Side Income'];
+const INCOME_AMOUNTS   = [5000, 500];
+const EXPENSE_DEFAULTS = ['Rent/Mortgage','Groceries','Utilities','Transport','Insurance','Subscriptions','Dining Out','Savings Contribution'];
+const EXPENSE_AMOUNTS  = [1500, 400, 150, 200, 150, 50, 200, 500];
+
+/**
+ * Append a new editable row to income or expense table.
+ * @param {'income'|'expense'} type
+ * @param {string} [label]
+ * @param {string|number} [amount]
+ */
+function addRow(type, label = '', amount = '') {
+  const tbody = document.getElementById(type === 'income' ? 'incomeBody' : 'expenseBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" value="${label}" placeholder="Category" oninput="calcBudget()"></td>
+    <td><input type="text" value="${amount}" placeholder="0"
+      onblur="formatCurrencyInput(this)" onfocus="stripCommas(this)" oninput="calcBudget()"></td>
+    <td style="width:44px"><button class="btn btn-danger" onclick="this.closest('tr').remove();calcBudget()">×</button></td>
+  `;
+  tbody.appendChild(tr);
+  calcBudget();
+}
+
+function initBudget() {
+  INCOME_DEFAULTS.forEach((l, i)  => addRow('income',  l, INCOME_AMOUNTS[i].toLocaleString()));
+  EXPENSE_DEFAULTS.forEach((l, i) => addRow('expense', l, EXPENSE_AMOUNTS[i].toLocaleString()));
+}
+
+/**
+ * Sum all amount inputs in a tbody.
+ * @param {string} tbodyId
+ * @returns {number}
+ */
+function sumRows(tbodyId) {
+  let total = 0;
+  document.querySelectorAll(`#${tbodyId} tr`).forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    if (inputs.length >= 2) {
+      total += parseFloat((inputs[1].value || '0').replace(/,/g, '')) || 0;
+    }
+  });
+  return total;
+}
+
+let _budgetChart = null;
+
+function calcBudget() {
+  const income   = sumRows('incomeBody');
+  const expenses = sumRows('expenseBody');
+  const cashflow = income - expenses;
+  const annual   = cashflow * 12;
+  const savingsRate = income > 0 ? Math.max(0, cashflow / income * 100) : 0;
+
+  document.getElementById('b-income').textContent   = fmtMoney(income);
+  document.getElementById('b-expenses').textContent = fmtMoney(expenses);
+
+  const cfEl = document.getElementById('b-cashflow');
+  cfEl.textContent = (cashflow < 0 ? '-' : '') + fmtMoney(cashflow);
+  cfEl.className = 'card-value ' + (cashflow >= 0 ? 'positive' : 'negative');
+
+  const annEl = document.getElementById('b-annual');
+  annEl.textContent = (annual < 0 ? '-' : '') + fmtMoney(annual);
+  annEl.className = 'card-value ' + (annual >= 0 ? 'positive' : 'negative');
+
+  document.getElementById('b-savings-rate').textContent = fmtPct(savingsRate);
+  document.getElementById('b-savings-bar').style.width  = Math.min(100, savingsRate) + '%';
+
+  saveBudgetRows();
+  renderBudgetChart();
+}
+
+function renderBudgetChart() {
+  const labels = [], data = [];
+  document.querySelectorAll('#expenseBody tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    if (inputs.length < 2) return;
+    const label = inputs[0].value || 'Other';
+    const val   = parseFloat((inputs[1].value || '0').replace(/,/g, '')) || 0;
+    if (val > 0) { labels.push(label); data.push(val); }
+  });
+
+  const colors = chartColors();
+  const ctx = document.getElementById('budgetChart').getContext('2d');
+  if (_budgetChart) _budgetChart.destroy();
+  if (!data.length) return;
+  _budgetChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: data.map((_, i) => colors[i % colors.length]),
+        borderColor: cssVar('--surface'),
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: cssVar('--text'), font: { size: 11 }, boxWidth: 12, padding: 10 } },
+        tooltip: { callbacks: { label: c => ` ${c.label}: ${fmtMoney(c.raw)}` } }
+      }
+    }
+  });
+}
+
+/* === MORTGAGE === */
+
+let _amortData = [];
+let _amortMonthly = false;
+let _mortgageChart = null;
+let _lastTotalMonthly = 0;
+
+function syncDownPayment(from) {
+  const price = parseFloat(document.getElementById('m-price').value.replace(/,/g, '')) || 0;
+  if (price <= 0) return;
+  if (from === 'amt') {
+    const amt = parseFloat(document.getElementById('m-down-amt').value.replace(/,/g, '')) || 0;
+    document.getElementById('m-down-pct').value = (amt / price * 100).toFixed(1);
+  } else {
+    const pct = parseFloat(document.getElementById('m-down-pct').value) || 0;
+    const amt = price * pct / 100;
+    document.getElementById('m-down-amt').value = amt.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+  calcMortgage();
+}
+
+/**
+ * Monthly P&I payment.
+ * @param {number} principal
+ * @param {number} monthlyRate
+ * @param {number} n  Total months
+ * @returns {number}
+ */
+function calcMonthlyPayment(principal, monthlyRate, n) {
+  if (monthlyRate === 0) return principal / n;
+  return principal * (monthlyRate * Math.pow(1 + monthlyRate, n)) / (Math.pow(1 + monthlyRate, n) - 1);
+}
+
+/**
+ * Build full month-by-month amortization schedule.
+ * @param {number} principal
+ * @param {number} monthlyRate
+ * @param {number} n   Scheduled months
+ * @param {number} payment  Regular P&I payment
+ * @param {number} extra    Extra monthly principal
+ * @returns {Array<{month:number, payment:number, principal:number, interest:number, balance:number}>}
+ */
+function buildAmortSchedule(principal, monthlyRate, n, payment, extra) {
+  const schedule = [];
+  let balance = principal;
+  for (let m = 1; m <= n && balance > 0.005; m++) {
+    const interest = balance * monthlyRate;
+    let princ = Math.min(payment - interest + extra, balance);
+    balance = Math.max(0, balance - princ);
+    schedule.push({ month: m, payment: princ + interest, principal: princ, interest, balance });
+  }
+  return schedule;
+}
+
+function calcMortgage() {
+  const price      = parseFloat(document.getElementById('m-price').value.replace(/,/g, ''))   || 0;
+  const downAmt    = parseFloat(document.getElementById('m-down-amt').value.replace(/,/g, '')) || 0;
+  const term       = parseInt(document.getElementById('m-term').value);
+  const annualRate = parseFloat(document.getElementById('m-rate').value) || 0;
+  const annualTax  = parseFloat(document.getElementById('m-tax').value.replace(/,/g, ''))  || 0;
+  const annualIns  = parseFloat(document.getElementById('m-ins').value.replace(/,/g, ''))  || 0;
+  const extra      = parseFloat(document.getElementById('m-extra').value.replace(/,/g, '')) || 0;
+
+  const downPct   = price > 0 ? downAmt / price : 0;
+  const needsPMI  = downPct < 0.20;
+  document.getElementById('m-pmi-group').classList.toggle('hidden', !needsPMI);
+  const pmi = needsPMI ? parseFloat(document.getElementById('m-pmi').value.replace(/,/g, '')) || 0 : 0;
+
+  const principal   = Math.max(0, price - downAmt);
+  const monthlyRate = annualRate / 100 / 12;
+  const n           = term * 12;
+  const payment     = calcMonthlyPayment(principal, monthlyRate, n);
+
+  const monthlyTax  = annualTax / 12;
+  const monthlyIns  = annualIns / 12;
+  const totalMonthly = payment + monthlyTax + monthlyIns + pmi;
+  _lastTotalMonthly = totalMonthly;
+
+  _amortData = buildAmortSchedule(principal, monthlyRate, n, payment, extra);
+  const totalInterest  = _amortData.reduce((s, r) => s + r.interest, 0);
+  const totalCost      = downAmt + principal + totalInterest;
+  const actualMonths   = _amortData.length;
+
+  const now    = new Date();
+  const payoff = new Date(now.getFullYear(), now.getMonth() + actualMonths, 1);
+  const payoffStr = payoff.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  // Savings from extra payment
+  let interestSavedHtml = '';
+  if (extra > 0 && principal > 0) {
+    const baseData      = buildAmortSchedule(principal, monthlyRate, n, payment, 0);
+    const baseInterest  = baseData.reduce((s, r) => s + r.interest, 0);
+    const saved         = baseInterest - totalInterest;
+    const monthsSaved   = baseData.length - actualMonths;
+    interestSavedHtml = `
+      <div class="result-item savings">
+        <span class="result-label">Interest Saved (extra payment)</span>
+        <span class="result-value">${fmtMoney(saved)}</span>
+      </div>
+      <div class="result-item savings">
+        <span class="result-label">Months Saved</span>
+        <span class="result-value">${monthsSaved} months</span>
+      </div>`;
+  }
+
+  document.getElementById('mortgageResults').innerHTML = `
+    <div class="result-item highlight">
+      <span class="result-label">Monthly Payment (P&amp;I)</span>
+      <span class="result-value">${fmtMoneyDec(payment)}</span>
+    </div>
+    <div class="result-item highlight">
+      <span class="result-label">Total Monthly Payment</span>
+      <span class="result-value">${fmtMoneyDec(totalMonthly)}</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">Total Interest Paid</span>
+      <span class="result-value">${fmtMoney(totalInterest)}</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">Total Cost of Loan</span>
+      <span class="result-value">${fmtMoney(totalCost)}</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">Payoff Date</span>
+      <span class="result-value">${payoffStr}</span>
+    </div>
+    ${interestSavedHtml}
+  `;
+
+  renderMortgageChart();
+  renderAmortTable();
+  saveMortgageInputs();
+}
+
+function renderMortgageChart() {
+  if (!_amortData.length) return;
+  const years = [], cumInterest = [], cumPrincipal = [];
+  let ci = 0, cp = 0;
+  const totalYears = Math.ceil(_amortData.length / 12);
+  for (let y = 1; y <= totalYears; y++) {
+    const start = (y - 1) * 12, end = Math.min(y * 12, _amortData.length);
+    for (let i = start; i < end; i++) { ci += _amortData[i].interest; cp += _amortData[i].principal; }
+    years.push(`Yr ${y}`);
+    cumInterest.push(parseFloat(ci.toFixed(2)));
+    cumPrincipal.push(parseFloat(cp.toFixed(2)));
+  }
+
+  const colors = chartColors();
+  const ctx = document.getElementById('mortgageChart').getContext('2d');
+  if (_mortgageChart) _mortgageChart.destroy();
+  _mortgageChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [
+        { label: 'Cumulative Principal', data: cumPrincipal, borderColor: colors[4], backgroundColor: colors[4] + '33', fill: true, tension: 0.3, pointRadius: 1 },
+        { label: 'Cumulative Interest',  data: cumInterest,  borderColor: colors[2], backgroundColor: colors[2] + '33', fill: true, tension: 0.3, pointRadius: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: cssVar('--text') } },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmtMoney(c.raw)}` } }
+      },
+      scales: {
+        x: { ticks: { color: cssVar('--text-muted'), maxTicksLimit: 10 }, grid: { color: cssVar('--border') } },
+        y: { ticks: { color: cssVar('--text-muted'), callback: v => fmtMoney(v) }, grid: { color: cssVar('--border') } }
+      }
+    }
+  });
+}
+
+function toggleAmortView() {
+  _amortMonthly = !_amortMonthly;
+  document.getElementById('amortViewBtn').textContent = _amortMonthly ? 'Show Yearly' : 'Show Monthly';
+  renderAmortTable();
+}
+
+function renderAmortTable() {
+  if (!_amortData.length) return;
+  const rows = [];
+  if (_amortMonthly) {
+    _amortData.forEach(r => {
+      rows.push(`<tr>
+        <td>Mo ${r.month}</td>
+        <td>${fmtMoneyDec(r.payment)}</td>
+        <td>${fmtMoneyDec(r.principal)}</td>
+        <td>${fmtMoneyDec(r.interest)}</td>
+        <td>${fmtMoneyDec(r.balance)}</td>
+      </tr>`);
+    });
+  } else {
+    const totalYears = Math.ceil(_amortData.length / 12);
+    for (let y = 1; y <= totalYears; y++) {
+      const start = (y - 1) * 12, end = Math.min(y * 12, _amortData.length);
+      let tp = 0, ti = 0, tpay = 0;
+      for (let i = start; i < end; i++) { tp += _amortData[i].principal; ti += _amortData[i].interest; tpay += _amortData[i].payment; }
+      const balance = _amortData[end - 1]?.balance ?? 0;
+      rows.push(`<tr>
+        <td>Year ${y}</td>
+        <td>${fmtMoneyDec(tpay)}</td>
+        <td>${fmtMoneyDec(tp)}</td>
+        <td>${fmtMoneyDec(ti)}</td>
+        <td>${fmtMoneyDec(balance)}</td>
+      </tr>`);
+    }
+  }
+  document.getElementById('amortBody').innerHTML = rows.join('');
+}
+
+/* === INVESTMENT === */
+
+let _investMode = 'compound';
+let _investChart = null;
+let _investChartType = 'bar';
+
+function setInvestMode(mode) {
+  _investMode = mode;
+  document.getElementById('mode-compound').classList.toggle('active', mode === 'compound');
+  document.getElementById('mode-retire').classList.toggle('active', mode === 'retire');
+  document.getElementById('retire-fields').classList.toggle('hidden', mode !== 'retire');
+  if (mode === 'retire') syncRetireYears();
+  calcInvestment();
+}
+
+function syncRetireYears() {
+  const age      = parseInput('i-age');
+  const retireAge = parseInput('i-retire-age');
+  document.getElementById('i-years').value = Math.max(1, retireAge - age);
+}
+
+/**
+ * Future value of lump sum + periodic contributions.
+ * FV = PV*(1+r/n)^(n*t) + PMT_per_period * [((1+r/n)^(n*t) - 1) / (r/n)]
+ * PMT is monthly; converted to per-compounding-period internally.
+ * @param {number} pv        Initial investment
+ * @param {number} pmt       Monthly contribution
+ * @param {number} annualRate Annual rate (decimal)
+ * @param {number} n         Compound frequency per year
+ * @param {number} years
+ * @returns {number}
+ */
+function calcFV(pv, pmt, annualRate, n, years) {
+  if (years <= 0) return pv;
+  if (annualRate === 0) return pv + pmt * 12 * years;
+  const r = annualRate / n;
+  const periods = n * years;
+  const fvLump = pv * Math.pow(1 + r, periods);
+  const pmtPeriod = pmt * 12 / n;
+  const fvPmt = pmtPeriod * ((Math.pow(1 + r, periods) - 1) / r);
+  return fvLump + fvPmt;
+}
+
+/**
+ * Calculate required monthly contribution to reach targetFV.
+ * @param {number} pv
+ * @param {number} annualRate
+ * @param {number} n
+ * @param {number} years
+ * @param {number} targetFV
+ * @returns {number}
+ */
+function calcMonthlyNeeded(pv, annualRate, n, years, targetFV) {
+  if (years <= 0) return 0;
+  if (annualRate === 0) return Math.max(0, (targetFV - pv) / (12 * years));
+  const r = annualRate / n;
+  const periods = n * years;
+  const fvLump = pv * Math.pow(1 + r, periods);
+  const remaining = targetFV - fvLump;
+  if (remaining <= 0) return 0;
+  const pmtPeriod = remaining * r / (Math.pow(1 + r, periods) - 1);
+  return pmtPeriod * n / 12;
+}
+
+/**
+ * Build year-by-year series for chart.
+ */
+function buildInvestSeries(pv, pmt, annualRate, n, years) {
+  const contributions = [], growths = [], values = [];
+  for (let y = 1; y <= years; y++) {
+    const fv    = calcFV(pv, pmt, annualRate, n, y);
+    const contribs = pv + pmt * 12 * y;
+    contributions.push(parseFloat(contribs.toFixed(2)));
+    growths.push(parseFloat(Math.max(0, fv - contribs).toFixed(2)));
+    values.push(parseFloat(fv.toFixed(2)));
+  }
+  return { contributions, growths, values };
+}
+
+function calcInvestment() {
+  const pv         = parseInput('i-initial');
+  const pmt        = parseInput('i-monthly');
+  const annualRate = parseInput('i-rate') / 100;
+  const n          = parseInt(document.getElementById('i-freq').value);
+  const years      = parseInput('i-years');
+
+  const fv             = calcFV(pv, pmt, annualRate, n, years);
+  const totalContribs  = pv + pmt * 12 * years;
+  const totalGrowth    = fv - totalContribs;
+  const cagr           = (pv > 0 && years > 0) ? (Math.pow(fv / pv, 1 / years) - 1) * 100 : 0;
+
+  let extraRows = '';
+  if (_investMode === 'retire') {
+    const inflation      = parseInput('i-inflation') / 100;
+    const withdrawal     = parseInput('i-withdrawal') / 100;
+    const desiredMonthly = parseInput('i-retire-income');
+    const inflFactor     = Math.pow(1 + inflation, years);
+    const adjustedMonthly = desiredMonthly * inflFactor;
+    const nestEgg        = withdrawal > 0 ? (adjustedMonthly * 12) / withdrawal : 0;
+    const monthlyNeeded  = calcMonthlyNeeded(pv, annualRate, n, years, nestEgg);
+
+    extraRows = `
+      <div class="result-item">
+        <span class="result-label">Nest Egg Required</span>
+        <span class="result-value">${fmtMoney(nestEgg)}</span>
+      </div>
+      <div class="result-item">
+        <span class="result-label">Inflation-Adjusted Monthly Income</span>
+        <span class="result-value">${fmtMoney(adjustedMonthly)}/mo</span>
+      </div>
+      <div class="result-item highlight">
+        <span class="result-label">Monthly Savings Needed</span>
+        <span class="result-value">${fmtMoney(monthlyNeeded)}/mo</span>
+      </div>`;
+  }
+
+  document.getElementById('investResults').innerHTML = `
+    <div class="result-item highlight">
+      <span class="result-label">${_investMode === 'retire' ? 'Projected Nest Egg' : 'Future Value'}</span>
+      <span class="result-value">${fmtMoney(fv)}</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">Total Contributions</span>
+      <span class="result-value">${fmtMoney(totalContribs)}</span>
+    </div>
+    <div class="result-item savings">
+      <span class="result-label">Total Growth Earned</span>
+      <span class="result-value positive">${fmtMoney(totalGrowth)}</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">CAGR</span>
+      <span class="result-value">${fmtPct(cagr)}</span>
+    </div>
+    ${extraRows}
+  `;
+
+  saveInvestInputs();
+  renderInvestChart();
+}
+
+function renderInvestChart() {
+  const pv         = parseInput('i-initial');
+  const pmt        = parseInput('i-monthly');
+  const annualRate = parseInput('i-rate') / 100;
+  const n          = parseInt(document.getElementById('i-freq').value);
+  const years      = parseInput('i-years');
+
+  const series = buildInvestSeries(pv, pmt, annualRate, n, years);
+  const labels = Array.from({ length: years }, (_, i) => `Yr ${i + 1}`);
+  const colors = chartColors();
+  const ctx    = document.getElementById('investChart').getContext('2d');
+  if (_investChart) _investChart.destroy();
+
+  if (_investChartType === 'bar') {
+    _investChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Contributions', data: series.contributions, backgroundColor: colors[0] + 'cc', stack: 'a' },
+          { label: 'Growth',        data: series.growths,       backgroundColor: colors[4] + 'cc', stack: 'a' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: cssVar('--text') } },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmtMoney(c.raw)}` } }
+        },
+        scales: {
+          x: { stacked: true, ticks: { color: cssVar('--text-muted'), maxTicksLimit: 15 }, grid: { color: cssVar('--border') } },
+          y: { stacked: true, ticks: { color: cssVar('--text-muted'), callback: v => fmtMoney(v) }, grid: { color: cssVar('--border') } }
+        }
+      }
+    });
+  } else {
+    _investChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Portfolio Value',
+          data: series.values,
+          borderColor: colors[0],
+          backgroundColor: colors[0] + '22',
+          fill: true, tension: 0.3, pointRadius: 1
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: cssVar('--text') } },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmtMoney(c.raw)}` } }
+        },
+        scales: {
+          x: { ticks: { color: cssVar('--text-muted'), maxTicksLimit: 15 }, grid: { color: cssVar('--border') } },
+          y: { ticks: { color: cssVar('--text-muted'), callback: v => fmtMoney(v) }, grid: { color: cssVar('--border') } }
+        }
+      }
+    });
+  }
+}
+
+function toggleInvestChart() {
+  _investChartType = _investChartType === 'bar' ? 'line' : 'bar';
+  document.getElementById('investChartTitle').textContent =
+    _investChartType === 'bar' ? 'Contributions vs. Growth' : 'Portfolio Value Over Time';
+  renderInvestChart();
+}
+
+/* === SUMMARY === */
+
+function updateSummary() {
+  const income   = sumRows('incomeBody');
+  const expenses = sumRows('expenseBody');
+  const cashflow = income - expenses;
+  const savingsRate = income > 0 ? Math.max(0, cashflow / income * 100) : 0;
+
+  const cfEl = document.getElementById('s-cashflow');
+  cfEl.textContent = (cashflow < 0 ? '-' : '') + fmtMoney(cashflow);
+  cfEl.className = 'card-value ' + (cashflow >= 0 ? 'positive' : 'negative');
+
+  document.getElementById('s-savings-rate').textContent = fmtPct(savingsRate);
+  document.getElementById('s-savings-bar').style.width  = Math.min(100, savingsRate) + '%';
+
+  // Health score: savings rate → 70pts, positive cashflow → 30pts
+  const srScore  = income > 0 ? Math.min(70, savingsRate / 20 * 70) : 0;
+  const cfScore  = income > 0 && cashflow >= 0 ? 30 : income > 0 ? Math.max(0, 30 + cashflow / income * 30) : 0;
+  const health   = Math.round(srScore + cfScore);
+  const healthEl = document.getElementById('s-health');
+  healthEl.textContent = income > 0 ? health : '—';
+  healthEl.className = 'health-score ' + (health >= 70 ? 'positive' : health >= 40 ? '' : income > 0 ? 'negative' : '');
+  document.getElementById('s-health-label').textContent =
+    income <= 0 ? 'Enter budget data' :
+    health >= 80 ? 'Excellent' : health >= 60 ? 'Good' : health >= 40 ? 'Fair' : 'Needs Work';
+
+  // Mortgage affordability
+  const totalMonthly = _lastTotalMonthly;
+  if (income > 0 && totalMonthly > 0) {
+    const pct = totalMonthly / income * 100;
+    const affordEl = document.getElementById('s-afford-pct');
+    affordEl.textContent = fmtPct(pct);
+    affordEl.className = 'card-value ' + (pct < 28 ? 'positive' : pct <= 36 ? '' : 'negative');
+    document.getElementById('s-afford-status').textContent =
+      pct < 28 ? '✅ Affordable' : pct <= 36 ? '⚠️ Moderate' : '🔴 Stretched';
+  } else {
+    document.getElementById('s-afford-pct').textContent = '—';
+    document.getElementById('s-afford-pct').className = 'card-value';
+    document.getElementById('s-afford-status').textContent = 'Enter mortgage & income data';
+  }
+
+  // Investment projection
+  const pv    = parseInput('i-initial');
+  const pmt   = parseInput('i-monthly');
+  const rate  = parseInput('i-rate') / 100;
+  const freq  = parseInt(document.getElementById('i-freq').value);
+  const yrs   = parseInput('i-years');
+  const fv    = calcFV(pv, pmt, rate, freq, yrs);
+  const total = pv + pmt * 12 * yrs;
+  document.getElementById('s-invest-val').textContent = fmtMoney(fv);
+  const pct = total > 0 ? Math.min(100, total / fv * 100) : 0;
+  document.getElementById('s-invest-bar').style.width = pct + '%';
+  document.getElementById('s-invest-label').textContent =
+    `${yrs}-year projection at ${parseInput('i-rate')}% annual return`;
+
+  // Action items
+  const actions = [];
+  if (income <= 0) {
+    actions.push({ icon: '📊', text: 'Enter budget, mortgage, and investment data to see personalized recommendations.' });
+  } else {
+    if (cashflow < 0) {
+      actions.push({ icon: '⚠️', text: `Monthly cash flow is negative (${(cashflow < 0 ? '-' : '') + fmtMoney(cashflow)}) — reduce expenses or increase income.` });
+    }
+    if (savingsRate < 20) {
+      const needed = income * 0.2 - Math.max(0, cashflow);
+      actions.push({ icon: '💰', text: `Savings rate ${fmtPct(savingsRate)} — save an extra ${fmtMoney(needed)}/mo to reach the 20% target.` });
+    }
+    const extra = parseFloat(document.getElementById('m-extra').value.replace(/,/g, '')) || 0;
+    if (extra === 0 && _amortData.length > 0) {
+      const principal   = parseFloat(document.getElementById('m-price').value.replace(/,/g, '')) || 0;
+      const downAmt     = parseFloat(document.getElementById('m-down-amt').value.replace(/,/g, '')) || 0;
+      const loanAmt     = Math.max(0, principal - downAmt);
+      const mRate       = parseInput('m-rate') / 100 / 12;
+      const mN          = parseInt(document.getElementById('m-term').value) * 12;
+      const mPay        = calcMonthlyPayment(loanAmt, mRate, mN);
+      const baseInterest = _amortData.reduce((s, r) => s + r.interest, 0);
+      const extraData   = buildAmortSchedule(loanAmt, mRate, mN, mPay, 200);
+      const saved       = baseInterest - extraData.reduce((s, r) => s + r.interest, 0);
+      if (saved > 0) actions.push({ icon: '🏠', text: `Extra $200/mo mortgage payment saves ${fmtMoney(saved)} in interest over the loan life.` });
+    }
+    if (savingsRate >= 20 && cashflow >= 0) {
+      actions.push({ icon: '✅', text: `Savings rate ${fmtPct(savingsRate)} — great! Consider maxing retirement accounts (401k, IRA).` });
+    }
+  }
+
+  document.getElementById('s-actions').innerHTML = actions.map(a =>
+    `<li class="action-item"><span class="action-icon">${a.icon}</span><span>${a.text}</span></li>`
+  ).join('');
+}
+
+/* === PERSISTENCE === */
+
+function saveBudgetRows() {
+  const income = [], expense = [];
+  document.querySelectorAll('#incomeBody tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    if (inputs.length >= 2) income.push({ label: inputs[0].value, amount: inputs[1].value.replace(/,/g, '') });
+  });
+  document.querySelectorAll('#expenseBody tr').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    if (inputs.length >= 2) expense.push({ label: inputs[0].value, amount: inputs[1].value.replace(/,/g, '') });
+  });
+  localStorage.setItem('budget-rows', JSON.stringify({ income, expense }));
+}
+
+function restoreBudgetRows() {
+  const raw = localStorage.getItem('budget-rows');
+  if (!raw) return false;
+  try {
+    const { income, expense } = JSON.parse(raw);
+    const fmt = n => { const v = parseFloat(n); return isNaN(v) ? n : v.toLocaleString('en-US', { maximumFractionDigits: 0 }); };
+    income.forEach(r => addRow('income', r.label, fmt(r.amount)));
+    expense.forEach(r => addRow('expense', r.label, fmt(r.amount)));
+    return true;
+  } catch(e) { return false; }
+}
+
+const MORTGAGE_IDS = ['m-price','m-down-amt','m-down-pct','m-rate','m-tax','m-ins','m-pmi','m-extra','m-term'];
+const INVEST_IDS   = ['i-initial','i-monthly','i-rate','i-years','i-freq','i-age','i-retire-age','i-retire-income','i-inflation','i-withdrawal'];
+
+function saveMortgageInputs() {
+  const data = {};
+  MORTGAGE_IDS.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+  localStorage.setItem('budget-mortgage', JSON.stringify(data));
+}
+
+function restoreMortgageInputs() {
+  const raw = localStorage.getItem('budget-mortgage');
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    MORTGAGE_IDS.forEach(id => { if (data[id] != null) { const el = document.getElementById(id); if (el) el.value = data[id]; } });
+  } catch(e) {}
+}
+
+function saveInvestInputs() {
+  const data = { mode: _investMode };
+  INVEST_IDS.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
+  localStorage.setItem('budget-invest', JSON.stringify(data));
+}
+
+function restoreInvestInputs() {
+  const raw = localStorage.getItem('budget-invest');
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    INVEST_IDS.forEach(id => { if (data[id] != null) { const el = document.getElementById(id); if (el) el.value = data[id]; } });
+    if (data.mode && data.mode !== 'compound') setInvestMode(data.mode);
+  } catch(e) {}
+}
+
+/* === EXPORT === */
+
+function toggleExportPopover() {
+  document.getElementById('exportPopover').classList.toggle('open');
+}
+
+function exportPDF() {
+  document.getElementById('exportPopover').classList.remove('open');
+  window.print();
+}
+
+function exportCSV() {
+  document.getElementById('exportPopover').classList.remove('open');
+  const name = document.getElementById('logoText')?.textContent || 'Budget Dashboard';
+  const rows = [`"${name} — Export"`, `"Generated: ${new Date().toLocaleDateString()}"`, ''];
+
+  rows.push('=== BUDGET ===', 'Type,Category,Monthly Amount');
+  document.querySelectorAll('#incomeBody tr').forEach(tr => {
+    const i = tr.querySelectorAll('input');
+    if (i.length >= 2) rows.push(`Income,"${i[0].value}",${parseFloat(i[1].value.replace(/,/g,''))||0}`);
+  });
+  document.querySelectorAll('#expenseBody tr').forEach(tr => {
+    const i = tr.querySelectorAll('input');
+    if (i.length >= 2) rows.push(`Expense,"${i[0].value}",${parseFloat(i[1].value.replace(/,/g,''))||0}`);
+  });
+  rows.push(`,,`, `Total Income,,${sumRows('incomeBody').toFixed(2)}`, `Total Expenses,,${sumRows('expenseBody').toFixed(2)}`);
+
+  rows.push('', '=== MORTGAGE RESULTS ===', 'Item,Value');
+  rows.push(`Home Price,$${(document.getElementById('m-price').value||'').replace(/,/g,'')}`);
+  rows.push(`Down Payment ($),$${(document.getElementById('m-down-amt').value||'').replace(/,/g,'')}`);
+  rows.push(`Annual Rate,${document.getElementById('m-rate').value}%`);
+  rows.push(`Term,${document.getElementById('m-term').value} years`);
+  document.querySelectorAll('#mortgageResults .result-item').forEach(r => {
+    const lbl = r.querySelector('.result-label')?.textContent?.trim();
+    const val = r.querySelector('.result-value')?.textContent?.trim();
+    if (lbl && val) rows.push(`"${lbl}","${val}"`);
+  });
+
+  if (_amortData.length) {
+    rows.push('', '=== AMORTIZATION (YEARLY) ===', 'Year,Total Payment,Principal,Interest,Balance');
+    const totalYrs = Math.ceil(_amortData.length / 12);
+    for (let y = 1; y <= totalYrs; y++) {
+      const s = (y-1)*12, e = Math.min(y*12, _amortData.length);
+      let tp=0, tprinc=0, ti=0;
+      for (let i=s; i<e; i++) { tp += _amortData[i].payment; tprinc += _amortData[i].principal; ti += _amortData[i].interest; }
+      rows.push(`${y},${tp.toFixed(2)},${tprinc.toFixed(2)},${ti.toFixed(2)},${(_amortData[e-1]?.balance??0).toFixed(2)}`);
+    }
+  }
+
+  rows.push('', '=== INVESTMENT RESULTS ===', 'Item,Value');
+  rows.push(`Initial Investment,$${(document.getElementById('i-initial').value||'').replace(/,/g,'')}`);
+  rows.push(`Monthly Contribution,$${(document.getElementById('i-monthly').value||'').replace(/,/g,'')}`);
+  rows.push(`Annual Return,${document.getElementById('i-rate').value}%`);
+  rows.push(`Period,${document.getElementById('i-years').value} years`);
+  document.querySelectorAll('#investResults .result-item').forEach(r => {
+    const lbl = r.querySelector('.result-label')?.textContent?.trim();
+    const val = r.querySelector('.result-value')?.textContent?.trim();
+    if (lbl && val) rows.push(`"${lbl}","${val}"`);
+  });
+
+  const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (name.replace(/[^\w\s-]/g,'').trim() || 'budget-dashboard') + '.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+function exportDoc() {
+  document.getElementById('exportPopover').classList.remove('open');
+  const name = document.getElementById('logoText')?.textContent || 'Budget Dashboard';
+  const income = sumRows('incomeBody'), expenses = sumRows('expenseBody'), cashflow = income - expenses;
+  const savRate = income > 0 ? Math.max(0, cashflow/income*100).toFixed(1) : '0';
+
+  const tableRows = (tbodyId) => {
+    let out = '';
+    document.querySelectorAll(`#${tbodyId} tr`).forEach(tr => {
+      const i = tr.querySelectorAll('input');
+      if (i.length >= 2) {
+        const amt = parseFloat(i[1].value.replace(/,/g,'')) || 0;
+        out += `<tr><td>${i[0].value}</td><td>$${amt.toLocaleString()}</td></tr>`;
+      }
+    });
+    return out;
+  };
+
+  const resultRows = (containerId) => {
+    let out = '';
+    document.querySelectorAll(`#${containerId} .result-item`).forEach(r => {
+      const lbl = r.querySelector('.result-label')?.textContent?.trim();
+      const val = r.querySelector('.result-value')?.textContent?.trim();
+      if (lbl && val) out += `<tr><td>${lbl}</td><td><strong>${val}</strong></td></tr>`;
+    });
+    return out;
+  };
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name}</title>
+<style>body{font-family:Calibri,Arial,sans-serif;margin:2.5cm;font-size:11pt;color:#1a1a1a}
+h1{color:#4361ee;font-size:18pt;margin-bottom:4px}h2{color:#333;font-size:13pt;border-bottom:2px solid #4361ee;padding-bottom:4px;margin-top:24px}
+h3{font-size:11pt;color:#555;margin:12px 0 6px}
+table{border-collapse:collapse;width:100%;margin-bottom:14px}
+td,th{border:1px solid #ccc;padding:6px 10px;font-size:10pt}th{background:#f0f2f5;font-weight:600}
+.summary-box{background:#f8f9fa;border:1px solid #e2e8f0;border-radius:4px;padding:10px 14px;margin-bottom:16px;font-size:10pt}
+.pos{color:#16a34a}.neg{color:#dc2626}.label{color:#64748b;font-size:9pt}
+</style></head><body>
+<h1>${name}</h1>
+<p class="label">Generated ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</p>
+<h2>Budget</h2>
+<h3>Income</h3><table><thead><tr><th>Category</th><th>Monthly</th></tr></thead><tbody>${tableRows('incomeBody')}</tbody></table>
+<h3>Expenses</h3><table><thead><tr><th>Category</th><th>Monthly</th></tr></thead><tbody>${tableRows('expenseBody')}</tbody></table>
+<div class="summary-box">
+  <strong>Total Income:</strong> $${Math.round(income).toLocaleString()} &nbsp;|&nbsp;
+  <strong>Expenses:</strong> $${Math.round(expenses).toLocaleString()} &nbsp;|&nbsp;
+  <strong>Net Cash Flow:</strong> <span class="${cashflow>=0?'pos':'neg'}">${cashflow<0?'-':''}$${Math.round(Math.abs(cashflow)).toLocaleString()}</span> &nbsp;|&nbsp;
+  <strong>Savings Rate:</strong> ${savRate}%
+</div>
+<h2>Mortgage Calculator</h2>
+<table><thead><tr><th>Item</th><th>Value</th></tr></thead><tbody>${resultRows('mortgageResults')}</tbody></table>
+<h2>Investment Calculator</h2>
+<table><thead><tr><th>Item</th><th>Value</th></tr></thead><tbody>${resultRows('investResults')}</tbody></table>
+</body></html>`;
+
+  const blob = new Blob(['﻿' + html], { type: 'application/msword' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (name.replace(/[^\w\s-]/g,'').trim() || 'budget-dashboard') + '.doc';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* === DASHBOARD NAME === */
+
+function startEditName() {
+  const logo = document.getElementById('navLogo');
+  const current = document.getElementById('logoText').textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'logo-edit-input';
+  input.value = current;
+  logo.replaceWith(input);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const val = input.value.trim() || current;
+    localStorage.setItem('budget-name', val);
+    const newLogo = document.createElement('div');
+    newLogo.className = 'nav-logo';
+    newLogo.id = 'navLogo';
+    newLogo.title = 'Click to rename';
+    newLogo.onclick = startEditName;
+    newLogo.innerHTML = `<span class="logo-text" id="logoText">${val}</span>`;
+    input.replaceWith(newLogo);
+    document.title = val.replace(/^[^\w]+/, '').trim() || val;
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { input.blur(); }
+    if (e.key === 'Escape') { input.value = current; input.blur(); }
+  });
+}
+
+/* === INIT === */
+
+(function init() {
+  // Restore saved name
+  const savedName = localStorage.getItem('budget-name');
+  if (savedName) {
+    document.getElementById('logoText').textContent = savedName;
+    document.title = savedName.replace(/^[^\w]+/, '').trim() || savedName;
+  }
+
+  // Restore saved theme
+  const saved = localStorage.getItem('budget-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.querySelectorAll('.theme-swatch').forEach(s => {
+    const active = s.dataset.theme === saved;
+    s.classList.toggle('active', active);
+    s.querySelector('.swatch-circle').textContent = active ? '✓' : '';
+  });
+
+  restoreMortgageInputs();
+  restoreInvestInputs();
+  if (!restoreBudgetRows()) initBudget();
+  calcBudget();
+  calcMortgage();
+  calcInvestment();
+})();
+</script>
+</body>
+</html>
