@@ -1,4 +1,5 @@
-<img width="1280" height="720" alt="Budget Dashboard" src="https://github.com/user-attachments/assets/5f18ce40-4ad8-424f-bc88-6dd94b09b662" />
+<img width="1280" height="720" alt="Budget Dashboard" src="https://github.com/user-attachments/assets/dd8593a3-58f5-467d-ba93-cb95b74c2117" />
+
 
 A simple budget tool as an HTML file.
 
